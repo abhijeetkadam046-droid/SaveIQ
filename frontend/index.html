@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="SaveIQ – AI Savings Goal Tracker. Cloud-based personal finance management powered by Groq LLaMA 3.3-70B, automated deadline audits, and intelligent savings recommendations.">
+  <meta name="author" content="SaveIQ FinTech Systems">
+  <title>SaveIQ – AI Savings Goal Tracker & Financial Analytics</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366f1'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>">
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <!-- Application Stylesheet -->
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar" id="appNavbar">
+    <a href="/" class="brand-wrapper" id="brandLink">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title">SaveIQ</div>
+        <div class="brand-subtitle">AI Savings Tracker</div>
+      </div>
+    </a>
+
+    <div class="nav-actions">
+      <div class="groq-status-badge" id="groqStatusBadge" title="Groq LLaMA 3.3-70B Versatile Intelligence Active">
+        <div class="pulse-dot"></div>
+        <span>Groq LLaMA 3.3-70B</span>
+      </div>
+
+      <button class="icon-btn" id="themeToggleBtn" title="Toggle Theme" aria-label="Toggle Theme">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+        </svg>
+      </button>
+
+      <button class="btn btn-primary" id="openCreateGoalBtn">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>New Goal</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Application Body -->
+  <main class="main-container" id="mainContent">
+
+    <!-- Hero Header & Quick Actions -->
+    <section class="hero-header" id="heroSection">
+      <div class="hero-title-group">
+        <h1>Savings Portfolio & Financial Pacing</h1>
+        <p>Monitor your financial objectives, analyze velocity, and receive LLaMA 3.3 AI recommendations.</p>
+      </div>
+      <div class="header-action-group">
+        <button class="btn btn-secondary btn-sm" id="triggerAuditBtn" title="Simulate Daily Deadline Audit">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <span>Run Daily Audit</span>
+        </button>
+        <a href="/api/reports/download-pdf" class="btn btn-secondary btn-sm" id="downloadPdfBtn" target="_blank" title="Download Executive ReportLab PDF">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span>PDF Report</span>
+        </a>
+        <a href="/api/export/sheets-csv" class="btn btn-secondary btn-sm" id="exportSheetsBtn" target="_blank" title="Export Google Sheets / CSV">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>Export Sheets</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- Executive Metrics Grid -->
+    <section class="metrics-grid" id="metricsOverview">
+      <div class="glass-panel metric-card card-saved" id="cardTotalSaved">
+        <div class="metric-header">
+          <span class="metric-label">Total Saved</span>
+          <div class="metric-icon-wrap" style="background: var(--emerald-bg); color: var(--emerald);">💵</div>
+        </div>
+        <div class="metric-value" id="valTotalSaved">$0</div>
+        <div class="metric-caption" id="statActiveGoals">0 Active Goals</div>
+      </div>
+
+      <div class="glass-panel metric-card" id="cardTotalTarget">
+        <div class="metric-header">
+          <span class="metric-label">Total Target</span>
+          <div class="metric-icon-wrap" style="background: var(--indigo-bg); color: var(--accent-primary);">🎯</div>
+        </div>
+        <div class="metric-value" id="valTotalTarget">$0</div>
+        <div class="metric-caption" id="statCompletedGoals">0 Completed</div>
+      </div>
+
+      <div class="glass-panel metric-card card-progress" id="cardOverallProgress">
+        <div class="metric-header">
+          <span class="metric-label">Overall Completion</span>
+          <div class="metric-icon-wrap" style="background: rgba(6, 182, 212, 0.15); color: #06b6d4;">📈</div>
+        </div>
+        <div class="metric-value" id="valOverallProgress">0%</div>
+        <div class="metric-caption">Aggregate Portfolio Velocity</div>
+      </div>
+
+      <div class="glass-panel metric-card card-discipline" id="cardDisciplineScore">
+        <div class="metric-header">
+          <span class="metric-label">Discipline Score</span>
+          <div class="metric-icon-wrap" style="background: var(--amber-bg); color: var(--amber);">🛡️</div>
+        </div>
+        <div class="metric-value" id="valDisciplineScore">0/100</div>
+        <div class="metric-caption">Pacing & Deadline Health</div>
+      </div>
+    </section>
+
+    <!-- Visual Analytics & Urgent Alerts -->
+    <section class="analytics-grid" id="analyticsSection">
+      <!-- Chart.js Visualizations -->
+      <div class="glass-panel" id="chartsPanel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+            <span>Savings Distribution & Allocation</span>
+          </div>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Real-time metrics</span>
+        </div>
+        <div class="panel-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+          <div>
+            <h4 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; text-align: center;">Category Breakdown</h4>
+            <div class="chart-container">
+              <canvas id="categoryChart"></canvas>
+            </div>
+          </div>
+          <div>
+            <h4 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; text-align: center;">Top Goals Progress</h4>
+            <div class="chart-container">
+              <canvas id="progressBarChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Approaching Deadlines & Urgent Monitor -->
+      <div class="glass-panel" id="urgentMonitorPanel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span>Deadline Monitor</span>
+          </div>
+          <span style="font-size: 0.75rem; color: var(--rose); font-weight: 700;">Audited Daily</span>
+        </div>
+        <div class="panel-body" id="urgentAlertsList">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Savings Portfolio Grid -->
+    <section class="portfolio-section" id="portfolioSection">
+      <div class="filter-bar">
+        <div class="tabs-group" id="filterTabs">
+          <button class="tab-btn active" data-filter="All">All Goals</button>
+          <button class="tab-btn" data-filter="Emergency Fund">Emergency Fund</button>
+          <button class="tab-btn" data-filter="Tech">Tech & Gadgets</button>
+          <button class="tab-btn" data-filter="Travel">Travel</button>
+          <button class="tab-btn" data-filter="Education">Education</button>
+          <button class="tab-btn" data-filter="Completed">Completed</button>
+        </div>
+      </div>
+
+      <div class="goals-grid" id="goalsGridContainer">
+        <!-- Goal Cards populated by JavaScript -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Create New Goal -->
+  <div class="modal-overlay" id="createGoalModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Create Savings Goal</div>
+        <button class="close-modal-btn" id="closeCreateModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="createGoalForm">
+          <div class="form-group">
+            <label class="form-label" for="goalName">Goal Name</label>
+            <input type="text" id="goalName" name="name" class="form-input" placeholder="e.g. Emergency Fund, Japan Trip, M3 MacBook" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="goalCategory">Category</label>
+              <select id="goalCategory" name="category" class="form-select">
+                <option value="Emergency Fund">Emergency Fund</option>
+                <option value="Tech & Gadgets">Tech & Gadgets</option>
+                <option value="Travel & Vacation">Travel & Vacation</option>
+                <option value="Education">Education</option>
+                <option value="Vehicle">Vehicle</option>
+                <option value="Home & Lifestyle">Home & Lifestyle</option>
+                <option value="Retirement">Retirement</option>
+                <option value="General">General</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="goalPriority">Priority</label>
+              <select id="goalPriority" name="priority" class="form-select">
+                <option value="High">High</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="targetAmount">Target Amount ($)</label>
+              <input type="number" id="targetAmount" name="target_amount" class="form-input" placeholder="5000" min="1" step="any" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="initialSavings">Initial Savings ($)</label>
+              <input type="number" id="initialSavings" name="initial_savings" class="form-input" placeholder="500" min="0" step="any" value="0">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="goalDeadline">Target Deadline</label>
+              <input type="date" id="goalDeadline" name="deadline" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="userEmail">Alert Email</label>
+              <input type="email" id="userEmail" name="user_email" class="form-input" value="saver@saveiq.ai" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="goalPurpose">Purpose / Motivation</label>
+            <textarea id="goalPurpose" name="purpose" class="form-textarea" placeholder="Why are you saving for this? (e.g. 6-month buffer for peace of mind)"></textarea>
+          </div>
+
+          <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="checkbox" id="emailAlerts" name="email_alerts" checked style="accent-color: var(--accent-primary);">
+            <label for="emailAlerts" style="font-size: 0.85rem; color: var(--text-secondary); cursor: pointer;">Enable automated daily deadline email reminders</label>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('createGoalModal')">Cancel</button>
+            <button type="submit" class="btn btn-primary">Create Goal</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Quick Deposit -->
+  <div class="modal-overlay" id="depositModal">
+    <div class="modal-content" style="max-width: 440px;">
+      <div class="modal-header">
+        <div class="modal-title">Record Deposit</div>
+        <button class="close-modal-btn" id="closeDepositModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom: 1.25rem;">
+          <h3 id="depositGoalName" style="font-size: 1.1rem; font-weight: 700;">Goal Name</h3>
+          <p id="depositGoalTarget" style="font-size: 0.82rem; color: var(--text-muted);"></p>
+        </div>
+        <form id="depositForm">
+          <div class="form-group">
+            <label class="form-label" for="depositAmount">Deposit Amount ($)</label>
+            <input type="number" id="depositAmount" name="amount" class="form-input" placeholder="e.g. 250" min="1" step="any" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="depositNote">Contribution Note</label>
+            <input type="text" id="depositNote" name="note" class="form-input" placeholder="e.g. Bi-weekly paycheck allocation">
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('depositModal')">Cancel</button>
+            <button type="submit" class="btn btn-success">+ Confirm Deposit</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: AI Advisor Insights (Groq LLaMA 3.3-70B) -->
+  <div class="modal-overlay" id="aiModal">
+    <div class="modal-content" style="max-width: 620px;">
+      <div class="modal-header">
+        <div class="modal-title" id="aiGoalTitle">AI Financial Guidance</div>
+        <button class="close-modal-btn" id="closeAiModalBtn">&times;</button>
+      </div>
+      <div class="modal-body" id="aiModalBody">
+        <!-- Loaded dynamically from Groq AI -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Application Scripts -->
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/charts.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

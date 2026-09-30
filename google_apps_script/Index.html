@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SaveIQ – AI Savings Goal Tracker (Google Sheets Edition)</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-secondary: #111827;
+      --bg-card: rgba(17, 24, 39, 0.8);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+      --accent-primary: #6366f1;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #ef4444;
+      --font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; font-family: var(--font-family); }
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 1.5rem;
+      background-image: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 40%);
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .brand h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .btn {
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn-primary { background: var(--accent-gradient); color: white; }
+    .btn-secondary { background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      backdrop-filter: blur(12px);
+    }
+    .card-val { font-size: 1.8rem; font-weight: 800; margin: 0.35rem 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+    .goal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 99px;
+      margin: 0.8rem 0;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent-gradient);
+      border-radius: 99px;
+    }
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+      display: none; align-items: center; justify-content: center; z-index: 999;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      padding: 1.5rem; border-radius: 14px; width: 90%; max-width: 500px;
+    }
+    .input {
+      width: 100%; padding: 0.6rem; margin: 0.4rem 0 1rem;
+      background: var(--bg-primary); border: 1px solid var(--border-color);
+      border-radius: 6px; color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="brand">
+      <div style="width: 38px; height: 38px; border-radius: 8px; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">💰</div>
+      <div>
+        <h1>SaveIQ</h1>
+        <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Google Sheets & Groq AI Edition</div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <button class="btn btn-secondary" onclick="runGasAudit()">⚡ Run Daily Audit</button>
+      <button class="btn btn-primary" onclick="openCreateModal()">+ New Goal</button>
+    </div>
+  </header>
+
+  <section class="metrics">
+    <div class="card">
+      <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Total Saved</div>
+      <div class="card-val" id="gasTotalSaved" style="color: var(--emerald);">$0</div>
+      <div style="font-size: 0.8rem; color: var(--text-secondary);" id="gasActiveCount">0 Active Goals</div>
+    </div>
+    <div class="card">
+      <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Total Target</div>
+      <div class="card-val" id="gasTotalTarget">$0</div>
+      <div style="font-size: 0.8rem; color: var(--text-secondary);" id="gasCompletedCount">0 Completed</div>
+    </div>
+    <div class="card">
+      <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Portfolio Completion</div>
+      <div class="card-val" id="gasOverallProgress" style="color: var(--accent-primary);">0%</div>
+      <div style="font-size: 0.8rem; color: var(--text-secondary);">Calculated Live from Sheets</div>
+    </div>
+  </section>
+
+  <h2 style="font-size: 1.2rem; margin-bottom: 1rem;">Savings Goals Portfolio</h2>
+  <div class="grid" id="gasGoalsGrid">
+    <div style="padding: 2rem; color: var(--text-muted);">Loading goals from Google Sheets...</div>
+  </div>
+
+  <!-- Create Goal Modal -->
+  <div class="modal-overlay" id="gasCreateModal">
+    <div class="modal">
+      <h3 style="margin-bottom: 1rem;">Create Savings Goal</h3>
+      <form id="gasGoalForm" onsubmit="handleGasCreate(event)">
+        <label>Goal Name</label>
+        <input type="text" id="gName" class="input" required placeholder="e.g. Emergency Fund">
+        
+        <label>Category</label>
+        <select id="gCat" class="input">
+          <option>Emergency Fund</option>
+          <option>Tech & Gadgets</option>
+          <option>Travel & Vacation</option>
+          <option>Education</option>
+          <option>Vehicle</option>
+          <option>General</option>
+        </select>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div>
+            <label>Target Amount ($)</label>
+            <input type="number" id="gTarget" class="input" required min="1">
+          </div>
+          <div>
+            <label>Initial Savings ($)</label>
+            <input type="number" id="gCurrent" class="input" value="0">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div>
+            <label>Deadline</label>
+            <input type="date" id="gDeadline" class="input" required>
+          </div>
+          <div>
+            <label>Priority</label>
+            <select id="gPriority" class="input">
+              <option>High</option>
+              <option selected>Medium</option>
+              <option>Low</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('gasCreateModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save to Sheets</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- AI Modal -->
+  <div class="modal-overlay" id="gasAiModal">
+    <div class="modal" style="max-width: 550px;">
+      <h3 id="gasAiTitle" style="margin-bottom: 1rem; color: var(--accent-primary);">Groq AI Advice</h3>
+      <div id="gasAiContent" style="font-size: 0.9rem; line-height: 1.6; color: var(--text-secondary);">Analyzing...</div>
+      <div style="margin-top: 1.5rem; text-align: right;">
+        <button class="btn btn-secondary" onclick="closeModal('gasAiModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let goalsData = [];
+
+    window.onload = function() {
+      loadSheetsData();
+    };
+
+    function loadSheetsData() {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(renderGasData)
+          .withFailureHandler(err => alert("Sheets error: " + err.message))
+          .getGoals();
+      } else {
+        // Mock fallback if opened locally outside GAS
+        renderGasData([
+          { id: "1", name: "Emergency Fund", category: "Emergency Fund", target_amount: 15000, current_amount: 9200, progress_percentage: 61.3, days_remaining: 120, daily_required: 48.33, status: "Active" },
+          { id: "2", name: "MacBook Workstation", category: "Tech & Gadgets", target_amount: 2800, current_amount: 2100, progress_percentage: 75.0, days_remaining: 21, daily_required: 33.33, status: "Active" }
+        ]);
+      }
+    }
+
+    function renderGasData(goals) {
+      goalsData = goals;
+      const totalSaved = goals.reduce((a, b) => a + (b.current_amount || 0), 0);
+      const totalTarget = goals.reduce((a, b) => a + (b.target_amount || 0), 0);
+      const pct = totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0;
+
+      document.getElementById("gasTotalSaved").innerText = "$" + totalSaved.toLocaleString();
+      document.getElementById("gasTotalTarget").innerText = "$" + totalTarget.toLocaleString();
+      document.getElementById("gasOverallProgress").innerText = pct + "%";
+      document.getElementById("gasActiveCount").innerText = goals.filter(g => g.status === "Active").length + " Active";
+      document.getElementById("gasCompletedCount").innerText = goals.filter(g => g.status === "Completed").length + " Completed";
+
+      const grid = document.getElementById("gasGoalsGrid");
+      if (!goals.length) {
+        grid.innerHTML = '<div style="color: var(--text-muted);">No goals recorded yet. Click "+ New Goal" above to create one in Google Sheets!</div>';
+        return;
+      }
+
+      grid.innerHTML = goals.map(g => `
+        <div class="goal-card">
+          <div>
+            <div style="font-size: 0.75rem; color: var(--accent-primary); font-weight: 700; text-transform: uppercase;">${g.category}</div>
+            <h3 style="font-size: 1.15rem; margin: 0.2rem 0;">${g.name}</h3>
+            <div style="display: flex; justify-content: space-between; margin-top: 0.75rem; font-size: 0.85rem;">
+              <span><b>$${g.current_amount.toLocaleString()}</b> / $${g.target_amount.toLocaleString()}</span>
+              <span style="color: var(--accent-primary); font-weight: 700;">${g.progress_percentage}%</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width: ${Math.min(100, g.progress_percentage)}%;"></div>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
+              ${g.days_remaining > 0 ? `${g.days_remaining} days left • Need $${g.daily_required}/day` : 'Deadline Reached'}
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-secondary" style="flex: 1; justify-content: center; font-size: 0.8rem;" onclick="askGasAi('${g.id}')">✨ AI Advice</button>
+            <button class="btn btn-primary" style="flex: 1; justify-content: center; font-size: 0.8rem;" onclick="recordGasDeposit('${g.id}')">+ Deposit</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function handleGasCreate(e) {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById("gName").value,
+        category: document.getElementById("gCat").value,
+        target_amount: document.getElementById("gTarget").value,
+        initial_savings: document.getElementById("gCurrent").value,
+        deadline: document.getElementById("gDeadline").value,
+        priority: document.getElementById("gPriority").value,
+        email_alerts: true
+      };
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(() => {
+            closeModal('gasCreateModal');
+            loadSheetsData();
+          })
+          .createGoal(payload);
+      } else {
+        alert("Running locally. Deploy to Google Apps Script to save to Google Sheets.");
+        closeModal('gasCreateModal');
+      }
+    }
+
+    function recordGasDeposit(id) {
+      const amt = prompt("Enter deposit amount ($):", "100");
+      if (!amt || isNaN(amt)) return;
+
+      const g = goalsData.find(x => x.id == id);
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(() => loadSheetsData())
+          .addDeposit(id, g ? g.name : "Goal", parseFloat(amt), "Manual Deposit");
+      } else {
+        alert("Deposit recorded!");
+      }
+    }
+
+    function askGasAi(id) {
+      const g = goalsData.find(x => x.id == id);
+      if (!g) return;
+
+      openModal('gasAiModal');
+      document.getElementById("gasAiTitle").innerText = "AI Guidance: " + g.name;
+      document.getElementById("gasAiContent").innerText = "Consulting Groq LLaMA 3.3-70B model...";
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(res => {
+            document.getElementById("gasAiContent").innerHTML = `
+              <p><b>Recommendation:</b> ${res.recommendation}</p>
+              <br/>
+              <p><b>Required Velocity:</b> $${res.daily_saving_target}/day ($${res.weekly_saving_target}/week)</p>
+              <p><b>Feasibility:</b> ${res.feasibility_score}%</p>
+              <br/>
+              <p><b>Strategies:</b></p>
+              <ul>${res.strategies.map(s => '<li>' + s + '</li>').join('')}</ul>
+              <br/>
+              <p style="font-style: italic;">"${res.motivational_quote}"</p>
+            `;
+          })
+          .getAIRecommendation(g);
+      } else {
+        setTimeout(() => {
+          document.getElementById("gasAiContent").innerHTML = `
+            <p>Pacing Velocity: Save $${g.daily_required}/day to hit your goal on time.</p>
+            <br/>
+            <p>1. Automate weekly transfers.<br/>2. Trim discretionary dining expenses.<br/>3. Reinvest small windfalls.</p>
+          `;
+        }, 600);
+      }
+    }
+
+    function runGasAudit() {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(res => alert(`Daily Audit Executed!\nAudited: ${res.totalAudited} goals\nAlerts Dispatched: ${res.alertsSent}`))
+          .auditDeadlinesAndSendAlerts();
+      } else {
+        alert("Audit simulation completed!");
+      }
+    }
+
+    function openCreateModal() { document.getElementById("gasCreateModal").classList.add("active"); }
+    function openModal(id) { document.getElementById(id).classList.add("active"); }
+    function closeModal(id) { document.getElementById(id).classList.remove("active"); }
+  </script>
+</body>
+</html>
